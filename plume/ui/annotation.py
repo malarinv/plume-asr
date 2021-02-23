@@ -1,10 +1,12 @@
+# import sys
 from pathlib import Path
+from uuid import uuid4
 
 import streamlit as st
 import typer
-from uuid import uuid4
-from ..utils import ExtendedPath, get_mongo_conn
-from .st_rerun import rerun
+
+from plume.utils import ExtendedPath, get_mongo_conn
+from plume.preview.st_rerun import rerun
 
 app = typer.Typer()
 
@@ -42,10 +44,10 @@ if not hasattr(st, "mongo_connected"):
             upsert=True,
         )
 
-    def set_task_fn(mf_path, task_id):
+    def set_task_fn(data_path, task_id):
         if task_id:
             st.task_id = task_id
-        task_path = mf_path.parent / Path(f"task-{st.task_id}.lck")
+        task_path = data_path / Path(f"task-{st.task_id}.lck")
         if not task_path.exists():
             print(f"creating task lock at {task_path}")
             task_path.touch()
@@ -62,17 +64,28 @@ if not hasattr(st, "mongo_connected"):
 
 
 @st.cache()
-def load_ui_data(validation_ui_data_path: Path):
+def load_ui_data(data_dir: Path, dump_fname: Path):
+    validation_ui_data_path = data_dir / dump_fname
     typer.echo(f"Using validation ui data from {validation_ui_data_path}")
     return ExtendedPath(validation_ui_data_path).read_json()
 
 
+def show_key(sample, key, trail=""):
+    if key in sample:
+        title = key.replace("_", " ").title()
+        if type(sample[key]) == float:
+            st.sidebar.markdown(f"{title}: {sample[key]:.2f}{trail}")
+        else:
+            st.sidebar.markdown(f"{title}: {sample[key]}")
+
+
 @app.command()
-def main(manifest: Path, task_id: str = ""):
-    st.set_task(manifest, task_id)
-    ui_config = load_ui_data(manifest)
+def main(data_dir: Path, dump_fname: Path = "ui_dump.json", task_id: str = ""):
+    st.set_task(data_dir, task_id)
+    ui_config = load_ui_data(data_dir, dump_fname)
     asr_data = ui_config["data"]
     annotation_only = ui_config.get("annotation_only", False)
+    asr_result_key = ui_config.get("asr_result_key", "pretrained_asr")
     sample_no = st.get_current_cursor()
     if len(asr_data) - 1 < sample_no or sample_no < 0:
         print("Invalid samplno resetting to 0")
@@ -91,15 +104,16 @@ def main(manifest: Path, task_id: str = ""):
         st.update_cursor(new_sample - 1)
     st.sidebar.title(f"Details: [{sample['real_idx']}]")
     st.sidebar.markdown(f"Gold Text: **{sample['text']}**")
+    # if "caller" in sample:
+    #     st.sidebar.markdown(f"Caller: **{sample['caller']}**")
+    show_key(sample, "caller")
     if not annotation_only:
-        st.sidebar.title("Results:")
-        st.sidebar.markdown(f"Pretrained: **{sample['pretrained_asr']}**")
-        if "caller" in sample:
-            st.sidebar.markdown(f"Caller: **{sample['caller']}**")
-        else:
-            st.sidebar.title(f"Pretrained WER: {sample['pretrained_wer']:.2f}%")
-    st.sidebar.image(Path(sample["plot_path"]).read_bytes())
-    st.audio(Path(sample["audio_path"]).open("rb"))
+        show_key(sample, asr_result_key)
+        show_key(sample, "asr_wer", trail="%")
+        show_key(sample, "correct_candidate")
+
+    st.sidebar.image((data_dir / Path(sample["plot_path"])).read_bytes())
+    st.audio((data_dir / Path(sample["audio_path"])).open("rb"))
     # set default to text
     corrected = sample["text"]
     correction_entry = st.get_correction_entry(sample["utterance_id"])

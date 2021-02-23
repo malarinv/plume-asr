@@ -1,7 +1,15 @@
-import streamlit.ReportThread as ReportThread
-from streamlit.ScriptRequestQueue import RerunData
-from streamlit.ScriptRunner import RerunException
-from streamlit.server.Server import Server
+try:
+    # Before Streamlit 0.65
+    from streamlit.ReportThread import get_report_ctx
+    from streamlit.server.Server import Server
+    from streamlit.ScriptRequestQueue import RerunData
+    from streamlit.ScriptRunner import RerunException
+except ModuleNotFoundError:
+    # After Streamlit 0.65
+    from streamlit.report_thread import get_report_ctx
+    from streamlit.server.server import Server
+    from streamlit.script_request_queue import RerunData
+    from streamlit.script_runner import RerunException
 
 
 def rerun():
@@ -13,7 +21,7 @@ def rerun():
 def _get_widget_states():
     # Hack to get the session object from Streamlit.
 
-    ctx = ReportThread.get_report_ctx()
+    ctx = get_report_ctx()
 
     session = None
 
@@ -34,5 +42,4 @@ def _get_widget_states():
             "Are you doing something fancy with threads?"
         )
     # Got the session object!
-
     return session._widget_states

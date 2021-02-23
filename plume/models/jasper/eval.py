@@ -45,7 +45,7 @@ def parse_args():
         eval_freq=100,
         load_dir="./train/models/jasper/",
         warmup_steps=3,
-        exp_name="jasper-speller",
+        exp_name="jasper",
     )
 
     # Overwrite default args
