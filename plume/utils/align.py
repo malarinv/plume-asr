@@ -59,40 +59,6 @@ def tts_jupyter():
 
 
 @app.command()
-def cut(audio_path: Path, transcript_path: Path, out_dir: Path = "/tmp"):
-    from . import ExtendedPath
-    import datetime
-    import re
-
-    aud_seg = pydub.AudioSegment.from_file(audio_path)
-    aud_seg[: 15 * 60 * 1000].export(out_dir / Path("audio.mp3"), format="mp3")
-    tscript_json = ExtendedPath(transcript_path).read_json()
-
-    def time_to_msecs(time_str):
-        return (
-            datetime.datetime.strptime(time_str, "%H:%M:%S,%f")
-            - datetime.datetime(1900, 1, 1)
-        ).total_seconds() * 1000
-
-    tscript_words = []
-    broken = False
-    for m in tscript_json["monologues"]:
-        # tscript_words.append("|")
-        for e in m["elements"]:
-            if e["type"] == "text":
-                text = e["value"]
-                text = re.sub(r"\[.*\]", "", text)
-                text = re.sub(r"\(.*\)", "", text)
-                tscript_words.append(text)
-            if "timestamp" in e and time_to_msecs(e["timestamp"]) >= 15 * 60 * 1000:
-                broken = True
-                break
-        if broken:
-            break
-    (out_dir / Path("words.txt")).write_text("".join(tscript_words))
-
-
-@app.command()
 def gentle_preview(
     audio_path: Path,
     transcript_path: Path,

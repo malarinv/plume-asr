@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 
 # pip install "nvidia-pyindex~=1.0.5"
 
@@ -62,11 +62,11 @@ extra_requirements = {
 }
 
 extra_requirements["all"] = list({d for l in extra_requirements.values() for d in l})
-packages = find_packages()
+packages = find_namespace_packages()
 
 setup(
     name="plume-asr",
-    version="0.11",
+    version="0.2.0",
     description="Multi model ASR base package",
     url="http://github.com/malarinv/plume-asr",
     author="Malar Kannan",
