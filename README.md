@@ -52,3 +52,8 @@ TEXT = asr_model.transcribe(wav_data) # Returns the text spoken in the wav
 ```
 $ plume
 ```
+### Pretrained Models
+**Jasper**
+https://ngc.nvidia.com/catalog/models/nvidia:multidataset_jasper10x5dr/files?version=3
+**Wav2Vec2**
+https://github.com/pytorch/fairseq/blob/master/examples/wav2vec/README.md
