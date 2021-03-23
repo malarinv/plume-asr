@@ -58,6 +58,9 @@ extra_requirements = {
         "stringcase~=1.2.0",
         "google-cloud-speech~=1.3.1",
     ],
+    "ui": [
+        "rangehttpserver~=1.2.0",
+    ],
     "train": ["torchaudio~=0.6.0", "torch-stft~=0.1.4"],
 }
 

@@ -8,12 +8,11 @@ import typer
 # import rpyc
 
 # from tqdm import tqdm
-# from pydub import AudioSegment
 # from pydub.silence import split_on_silence
 from plume.utils import lazy_module, lazy_callable
 
 rpyc = lazy_module('rpyc')
-AudioSegment = lazy_callable('pydub.AudioSegment')
+pydub = lazy_module('pydub')
 split_on_silence = lazy_callable('pydub.silence.split_on_silence')
 
 app = typer.Typer()
@@ -106,7 +105,7 @@ def triton_transcribe_grpc_gen(
         #     ]
         #     pass
         transcript_list = []
-        sil_pad = AudioSegment.silent(duration=sil_msec)
+        sil_pad = pydub.AudioSegment.silent(duration=sil_msec)
         for seg in chunks:
             t_seg = sil_pad + seg + sil_pad
             c_transcript = transcriber(t_seg)
@@ -124,9 +123,7 @@ def triton_transcribe_grpc_gen(
 
 @app.command()
 def file(audio_file: Path, write_file: bool = False, chunked=True):
-    from pydub import AudioSegment
-
-    aseg = AudioSegment.from_file(audio_file)
+    aseg = pydub.AudioSegment.from_file(audio_file)
     transcriber, prep = triton_transcribe_grpc_gen()
     transcription = transcriber(prep(aseg))
 
@@ -139,10 +136,8 @@ def file(audio_file: Path, write_file: bool = False, chunked=True):
 
 @app.command()
 def benchmark(audio_file: Path):
-    from pydub import AudioSegment
-
     transcriber, audio_prep = transcribe_rpyc_gen()
-    file_seg = AudioSegment.from_file(audio_file)
+    file_seg = pydub.AudioSegment.from_file(audio_file)
     aud_seg = audio_prep(file_seg)
 
     def timeinfo():

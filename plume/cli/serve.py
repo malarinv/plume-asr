@@ -5,3 +5,10 @@ from ..models.jasper.serve import app as jasper_app
 app = typer.Typer()
 app.add_typer(wav2vec2_app, name="wav2vec2")
 app.add_typer(jasper_app, name="jasper")
+
+
+@app.callback()
+def serve():
+    """
+    serve sub commands
+    """

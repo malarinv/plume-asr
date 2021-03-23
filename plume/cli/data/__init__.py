@@ -27,6 +27,13 @@ app.add_typer(generate_app, name="generate")
 app.add_typer(wav2vec2_app, name="wav2vec2")
 
 
+@app.callback()
+def data():
+    """
+    data sub commands
+    """
+
+
 @app.command()
 def fix_path(dataset_path: Path, force: bool = False):
     manifest_path = dataset_path / Path("manifest.json")

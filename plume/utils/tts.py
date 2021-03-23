@@ -27,6 +27,10 @@ class GoogleTTS(object):
             audio_encoding=texttospeech.enums.AudioEncoding.LINEAR16,
             sample_rate_hertz=params["sample_rate"],
         )
+        if 'speaking_rate' in params:
+            audio_config.speaking_rate = params['speaking_rate']
+        if 'pitch' in params:
+            audio_config.pitch = params['pitch']
         response = self.client.synthesize_speech(tts_input, voice, audio_config)
         audio_content = response.audio_content
         return audio_content
@@ -73,6 +77,19 @@ class GoogleTTS(object):
                 }
             )
         return results
+
+    @classmethod
+    def voice_by_name(cls, name):
+        """Lists the available voices."""
+
+        # client = cls().client
+
+        # Performs the list voices request
+        results = cls.voice_list()
+        for voice in results:
+            if voice['name'] == name:
+                return voice
+        raise ValueError(f'{name} not a valid voice')
 
 
 @app.command()

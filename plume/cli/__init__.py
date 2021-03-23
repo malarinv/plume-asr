@@ -7,12 +7,12 @@ from .eval import app as eval_app
 from .serve import app as serve_app
 
 app = typer.Typer()
-app.add_typer(data_app, name="data")
-app.add_typer(ui_app, name="ui")
-app.add_typer(train_app, name="train")
-app.add_typer(eval_app, name="eval")
-app.add_typer(serve_app, name="serve")
-app.add_typer(utils_app, name='utils')
+app.add_typer(data_app)
+app.add_typer(ui_app)
+app.add_typer(train_app)
+app.add_typer(eval_app)
+app.add_typer(serve_app)
+app.add_typer(utils_app)
 
 
 def main():

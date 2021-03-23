@@ -1,66 +1,14 @@
 # import sys
 from pathlib import Path
-from uuid import uuid4
 
 import streamlit as st
 import typer
-
-from plume.utils import ExtendedPath, get_mongo_conn
-from plume.preview.st_rerun import rerun
+from plume.utils import ExtendedPath
+from plume.utils.ui_persist import setup_mongo_asr_validation_state
 
 app = typer.Typer()
 
-
-if not hasattr(st, "mongo_connected"):
-    st.mongoclient = get_mongo_conn(col="asr_validation")
-    mongo_conn = st.mongoclient
-    st.task_id = str(uuid4())
-
-    def current_cursor_fn():
-        # mongo_conn = st.mongoclient
-        cursor_obj = mongo_conn.find_one(
-            {"type": "current_cursor", "task_id": st.task_id}
-        )
-        cursor_val = cursor_obj["cursor"]
-        return cursor_val
-
-    def update_cursor_fn(val=0):
-        mongo_conn.find_one_and_update(
-            {"type": "current_cursor", "task_id": st.task_id},
-            {"$set": {"type": "current_cursor", "task_id": st.task_id, "cursor": val}},
-            upsert=True,
-        )
-        rerun()
-
-    def get_correction_entry_fn(code):
-        return mongo_conn.find_one(
-            {"type": "correction", "code": code}, projection={"_id": False}
-        )
-
-    def update_entry_fn(code, value):
-        mongo_conn.find_one_and_update(
-            {"type": "correction", "code": code},
-            {"$set": {"value": value, "task_id": st.task_id}},
-            upsert=True,
-        )
-
-    def set_task_fn(data_path, task_id):
-        if task_id:
-            st.task_id = task_id
-        task_path = data_path / Path(f"task-{st.task_id}.lck")
-        if not task_path.exists():
-            print(f"creating task lock at {task_path}")
-            task_path.touch()
-
-    st.get_current_cursor = current_cursor_fn
-    st.update_cursor = update_cursor_fn
-    st.get_correction_entry = get_correction_entry_fn
-    st.update_entry = update_entry_fn
-    st.set_task = set_task_fn
-    st.mongo_connected = True
-    cursor_obj = mongo_conn.find_one({"type": "current_cursor", "task_id": st.task_id})
-    if not cursor_obj:
-        update_cursor_fn(0)
+setup_mongo_asr_validation_state(st)
 
 
 @st.cache()

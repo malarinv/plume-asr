@@ -1,11 +1,13 @@
 from pathlib import Path
-from .tts import GoogleTTS
 # from IPython import display
 import requests
 import io
-import typer
+import shutil
 
+import typer
 from plume.utils import lazy_module
+
+from .tts import GoogleTTS
 
 display = lazy_module('IPython.display')
 pydub = lazy_module('pydub')
@@ -63,16 +65,19 @@ def gentle_preview(
     audio_path: Path,
     transcript_path: Path,
     service_uri="http://101.53.142.218:8765/transcriptions",
-    gent_preview_dir="../gentle_preview",
+    gent_preview_dir="./gentle_preview",
 ):
     from . import ExtendedPath
 
-    ab = audio_path.read_bytes()
-    tt = transcript_path.read_text()
-    audio, alignment = gentle_aligner(service_uri, ab, tt)
-    audio.export(gent_preview_dir / Path("a.wav"), format="wav")
-    alignment["status"] = "OK"
-    ExtendedPath(gent_preview_dir / Path("status.json")).write_json(alignment)
+    pkg_gentle_dir = Path(__file__).parent / 'gentle_preview'
+
+    shutil.copytree(str(pkg_gentle_dir), str(gent_preview_dir))
+    # ab = audio_path.read_bytes()
+    # tt = transcript_path.read_text()
+    # audio, alignment = gentle_aligner(service_uri, ab, tt)
+    # audio.export(gent_preview_dir / Path("a.wav"), format="wav")
+    # alignment["status"] = "OK"
+    # ExtendedPath(gent_preview_dir / Path("status.json")).write_json(alignment)
 
 
 def main():

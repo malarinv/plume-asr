@@ -3,27 +3,11 @@ from pathlib import Path
 import streamlit as st
 import typer
 from plume.utils import ExtendedPath
-from plume.preview.st_rerun import rerun
+from plume.utils.ui_persist import setup_file_state
 
 app = typer.Typer()
 
-if not hasattr(st, "state_lock"):
-    # st.task_id = str(uuid4())
-    task_path = ExtendedPath("preview.lck")
-
-    def current_cursor_fn():
-        return task_path.read_json()["current_cursor"]
-
-    def update_cursor_fn(val=0):
-        task_path.write_json({"current_cursor": val})
-        rerun()
-
-    st.get_current_cursor = current_cursor_fn
-    st.update_cursor = update_cursor_fn
-    st.state_lock = True
-    # cursor_obj = mongo_conn.find_one({"type": "current_cursor", "task_id": st.task_id})
-    # if not cursor_obj:
-    update_cursor_fn(0)
+setup_file_state(st)
 
 
 @st.cache()
@@ -40,7 +24,7 @@ def main(manifest: Path):
         print("Invalid samplno resetting to 0")
         st.update_cursor(0)
     sample = asr_data[sample_no]
-    st.title(f"ASR Manifest Preview")
+    st.title("ASR Manifest Preview")
     st.markdown(f"{sample_no+1} of {len(asr_data)} : **{sample['text']}**")
     new_sample = st.number_input(
         "Go To Sample:", value=sample_no + 1, min_value=1, max_value=len(asr_data)

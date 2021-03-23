@@ -11,12 +11,14 @@ from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import subprocess
 import shutil
 from urllib.parse import urlsplit
+
 # from .lazy_loader import LazyLoader
 from .lazy_import import lazy_callable, lazy_module
 
 # from ruamel.yaml import YAML
 # import boto3
 import typer
+
 # import pymongo
 # from slugify import slugify
 # import pydub
@@ -34,21 +36,28 @@ from .tts import app as tts_app
 from .transcribe import app as transcribe_app
 from .align import app as align_app
 
-boto3 = lazy_module('boto3')
-pymongo = lazy_module('pymongo')
-pydub = lazy_module('pydub')
-audio_display = lazy_module('librosa.display')
-plt = lazy_module('matplotlib.pyplot')
-librosa = lazy_module('librosa')
-YAML = lazy_callable('ruamel.yaml.YAML')
-num2words = lazy_callable('num2words.num2words')
-slugify = lazy_callable('slugify.slugify')
-compress = lazy_callable('natural.date.compress')
+boto3 = lazy_module("boto3")
+pymongo = lazy_module("pymongo")
+pydub = lazy_module("pydub")
+audio_display = lazy_module("librosa.display")
+plt = lazy_module("matplotlib.pyplot")
+librosa = lazy_module("librosa")
+YAML = lazy_callable("ruamel.yaml.YAML")
+num2words = lazy_callable("num2words.num2words")
+slugify = lazy_callable("slugify.slugify")
+compress = lazy_callable("natural.date.compress")
 
 app = typer.Typer()
 app.add_typer(tts_app, name="tts")
 app.add_typer(align_app, name="align")
 app.add_typer(transcribe_app, name="transcribe")
+
+
+@app.callback()
+def utils():
+    """
+    utils sub commands
+    """
 
 
 logging.basicConfig(
@@ -125,6 +134,10 @@ def upload_s3(dataset_path, s3_path):
     run_shell(f"aws s3 sync {dataset_path} {s3_path}")
 
 
+def copy_s3(dataset_path, s3_path):
+    run_shell(f"aws s3 cp {dataset_path} {s3_path}")
+
+
 def get_download_path(s3_uri, output_path):
     s3_uri_p = urlsplit(s3_uri)
     download_path = output_path / Path(s3_uri_p.path[1:])
@@ -135,11 +148,12 @@ def get_download_path(s3_uri, output_path):
 def s3_downloader():
     s3 = boto3.client("s3")
 
-    def download_s3(s3_uri, download_path):
+    def download_s3(s3_uri, download_path, verbose=False):
         s3_uri_p = urlsplit(s3_uri)
         download_path.parent.mkdir(exist_ok=True, parents=True)
         if not download_path.exists():
-            print(f"downloading {s3_uri} to {download_path}")
+            if verbose:
+                print(f"downloading {s3_uri} to {download_path}")
             s3.download_file(s3_uri_p.netloc, s3_uri_p.path[1:], str(download_path))
 
     return download_s3
@@ -186,6 +200,7 @@ def ui_data_generator(dataset_dir, asr_data_source, verbose=False):
             plot_seg(wav_plot_path.absolute(), audio_file)
         return {
             "audio_path": str(rel_data_path),
+            "audio_filepath": str(rel_data_path),
             "duration": round(audio_dur, 1),
             "text": transcript,
             "real_idx": num_datapoints,
@@ -229,17 +244,17 @@ def ui_dump_manifest_writer(dataset_dir, asr_data_source, verbose=False):
     )
 
     asr_manifest = dataset_dir / Path("manifest.json")
-    with asr_manifest.open("w") as mf:
-        print(f"writing manifest to {asr_manifest}")
-        for d in dump_data:
-            rel_data_path = d["audio_path"]
-            audio_dur = d["duration"]
-            transcript = d["text"]
-            manifest = manifest_str(str(rel_data_path), audio_dur, transcript)
-            mf.write(manifest)
-
+    asr_manifest_writer(asr_manifest, dump_data, verbose=verbose)
+    # with asr_manifest.open("w") as mf:
+    #     print(f"writing manifest to {asr_manifest}")
+    #     for d in dump_data:
+    #         rel_data_path = d["audio_path"]
+    #         audio_dur = d["duration"]
+    #         transcript = d["text"]
+    #         manifest = manifest_str(str(rel_data_path), audio_dur, transcript)
+    #         mf.write(manifest)
     ui_dump_file = dataset_dir / Path("ui_dump.json")
-    ExtendedPath(ui_dump_file).write_json({"data": dump_data})
+    ExtendedPath(ui_dump_file).write_json({"data": dump_data}, verbose=verbose)
     return num_datapoints
 
 
@@ -254,9 +269,10 @@ def asr_manifest_reader(data_manifest_path: Path):
         yield p
 
 
-def asr_manifest_writer(asr_manifest_path: Path, manifest_str_source):
+def asr_manifest_writer(asr_manifest_path: Path, manifest_str_source, verbose=False):
     with asr_manifest_path.open("w") as mf:
-        print(f"opening {asr_manifest_path} for writing manifest")
+        if verbose:
+            print(f"writing asr manifest to {asr_manifest_path}")
         for mani_dict in manifest_str_source:
             manifest = manifest_str(
                 mani_dict["audio_filepath"], mani_dict["duration"], mani_dict["text"]
@@ -293,37 +309,43 @@ def batch(iterable, n=1):
 class ExtendedPath(type(Path())):
     """docstring for ExtendedPath."""
 
-    def read_json(self):
-        print(f"reading json from {self}")
+    def read_json(self, verbose=False):
+        if verbose:
+            print(f"reading json from {self}")
         with self.open("r") as jf:
             return json.load(jf)
 
-    def read_yaml(self):
+    def read_yaml(self, verbose=False):
         yaml = YAML(typ="safe", pure=True)
-        print(f"reading yaml from {self}")
+        if verbose:
+            print(f"reading yaml from {self}")
         with self.open("r") as yf:
             return yaml.load(yf)
 
-    def read_jsonl(self):
-        print(f"reading jsonl from {self}")
+    def read_jsonl(self, verbose=False):
+        if verbose:
+            print(f"reading jsonl from {self}")
         with self.open("r") as jf:
-            for l in jf.readlines():
-                yield json.loads(l)
+            for ln in jf.readlines():
+                yield json.loads(ln)
 
-    def write_json(self, data):
-        print(f"writing json to {self}")
+    def write_json(self, data, verbose=False):
+        if verbose:
+            print(f"writing json to {self}")
         self.parent.mkdir(parents=True, exist_ok=True)
         with self.open("w") as jf:
             json.dump(data, jf, indent=2)
 
-    def write_yaml(self, data):
+    def write_yaml(self, data, verbose=False):
         yaml = YAML()
-        print(f"writing yaml to {self}")
+        if verbose:
+            print(f"writing yaml to {self}")
         with self.open("w") as yf:
             yaml.dump(data, yf)
 
-    def write_jsonl(self, data):
-        print(f"writing jsonl to {self}")
+    def write_jsonl(self, data, verbose=False):
+        if verbose:
+            print(f"writing jsonl to {self}")
         self.parent.mkdir(parents=True, exist_ok=True)
         with self.open("w") as jf:
             for d in data:
