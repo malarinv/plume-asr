@@ -38,7 +38,7 @@ The installation should work on Python 3.6 or newer. Untested on Python 2.7
 ### Library
 > Jasper
 ```python
-from plume.models.jasper.asr import JasperASR
+from plume.models.jasper_nemo.asr import JasperASR
 asr_model = JasperASR("/path/to/model_config_yaml","/path/to/encoder_checkpoint","/path/to/decoder_checkpoint") # Loads the models
 TEXT = asr_model.transcribe(wav_data) # Returns the text spoken in the wav
 ```
