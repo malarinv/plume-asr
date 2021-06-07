@@ -26,13 +26,15 @@ from plume.utils import (
 
 from ...models.wav2vec2.data import app as wav2vec2_app
 from .generate import app as generate_app
+from .process import app as process_app
 
 soundfile = lazy_module("soundfile")
 pydub = lazy_module("pydub")
 train_test_split = lazy_callable("sklearn.model_selection.train_test_split")
 
 app = typer.Typer()
-app.add_typer(generate_app, name="generate")
+app.add_typer(generate_app)
+app.add_typer(process_app)
 app.add_typer(wav2vec2_app, name="wav2vec2")
 
 

@@ -19,7 +19,8 @@ np = lazy_module("numpy")
 app = typer.Typer()
 
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -43,13 +44,18 @@ def transcribe_rpyc_gen(asr_host=ASR_RPYC_HOST, asr_port=ASR_RPYC_PORT):
         raise Exception("env-var JASPER_ASR_RPYC_HOST invalid")
 
     def audio_prep(aud_seg):
-        asr_seg = aud_seg.set_channels(1).set_sample_width(2).set_frame_rate(16000)
+        asr_seg = (
+            aud_seg.set_channels(1).set_sample_width(2).set_frame_rate(16000)
+        )
         af = BytesIO()
         asr_seg.export(af, format="wav")
         input_audio_bytes = af.getvalue()
         return input_audio_bytes
 
-    return asr.transcribe, audio_prep
+    def dummy_transcript(aud, append_raw=False):
+        return asr.transcribe(aud)
+
+    return dummy_transcript, audio_prep
 
 
 def triton_transcribe_grpc_gen(
@@ -60,10 +66,13 @@ def triton_transcribe_grpc_gen(
     chunk_msec=5000,
     sil_msec=500,
     # overlap=False,
+    append_raw=False,
     sep=" ",
 ):
     from tritonclient.utils import np_to_triton_dtype, InferenceServerException
     import tritonclient.grpc as grpcclient
+    # force loading
+    np.array
 
     sup_meth = ["chunked", "silence", "whole"]
     if method not in sup_meth:
@@ -90,10 +99,13 @@ def triton_transcribe_grpc_gen(
             response = client.infer(
                 asr_model, inputs, request_id=str(1), outputs=outputs
             )
-            transcript = response.as_numpy("OUTPUT_TEXT")[0]
+            outputs = response.as_numpy("OUTPUT_TEXT")
+            transcript = outputs[0].decode("utf-8")
+            if len(outputs) > 1 and append_raw:
+                transcript = transcript + "|" + outputs[1].decode("utf-8")
         except InferenceServerException:
-            transcript = b"[server error]"
-        return transcript.decode("utf-8")
+            transcript = "[server error]"
+        return transcript
 
     def chunked_transcriber(aud_seg):
         if method == "silence":
@@ -122,22 +134,34 @@ def triton_transcribe_grpc_gen(
         return transcript
 
     def audio_prep(aud_seg):
-        asr_seg = aud_seg.set_channels(1).set_sample_width(2).set_frame_rate(16000)
+        asr_seg = (
+            aud_seg.set_channels(1).set_sample_width(2).set_frame_rate(16000)
+        )
         return asr_seg
 
-    whole_transcriber = transcriber if method == "whole" else chunked_transcriber
+    whole_transcriber = (
+        transcriber if method == "whole" else chunked_transcriber
+    )
     return whole_transcriber, audio_prep
 
 
 @app.command()
 def file(
-    audio_file: Path, write_file: bool = False, chunked: bool = True, rpyc: bool = False, model='slu_wav2vec2'
+    audio_file: Path,
+    write_file: bool = False,
+    chunked: bool = False,
+    rpyc: bool = False,
+    append_raw: bool = False,
+    model="slu_num_wav2vec2",
 ):
     aseg = pydub.AudioSegment.from_file(audio_file)
     if rpyc:
         transcriber, prep = transcribe_rpyc_gen()
     else:
-        transcriber, prep = triton_transcribe_grpc_gen(asr_model=model)
+        method = "chunked" if chunked else "whole"
+        transcriber, prep = triton_transcribe_grpc_gen(
+            asr_model=model, method=method, append_raw=append_raw
+        )
     transcription = transcriber(prep(aseg))
 
     typer.echo(transcription)

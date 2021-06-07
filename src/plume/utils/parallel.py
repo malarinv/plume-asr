@@ -3,8 +3,8 @@ from tqdm import tqdm
 
 
 def parallel_apply(fn, iterable, workers=8, pool="thread", verbose=True):
-    # warm-up
-    fn(iterable[0])
+    # warm-up (doesn't work there fn conditionals that doesn't follow hot path)
+    # fn(iterable[0])
     if pool == "thread":
         with ThreadPoolExecutor(max_workers=workers) as exe:
             if verbose:
@@ -37,5 +37,10 @@ def parallel_apply(fn, iterable, workers=8, pool="thread", verbose=True):
                     return result
             else:
                 return [res for res in exe.map(fn, iterable)]
+    elif pool == "none":
+        if verbose:
+            return list(map(fn, tqdm(iterable)))
+        else:
+            return list(map(fn, iterable))
     else:
         raise Exception(f"unsupported pool type - {pool}")

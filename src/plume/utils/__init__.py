@@ -424,14 +424,6 @@ def ui_dump_manifest_writer(dataset_dir, asr_data_source, verbose=False):
 
     asr_manifest = dataset_dir / Path("manifest.json")
     asr_manifest_writer(asr_manifest, dump_data, verbose=verbose)
-    # with asr_manifest.open("w") as mf:
-    #     print(f"writing manifest to {asr_manifest}")
-    #     for d in dump_data:
-    #         rel_data_path = d["audio_path"]
-    #         audio_dur = d["duration"]
-    #         transcript = d["text"]
-    #         manifest = manifest_str(str(rel_data_path), audio_dur, transcript)
-    #         mf.write(manifest)
     ui_dump_file = dataset_dir / Path("ui_dump.json")
     ExtendedPath(ui_dump_file).write_json({"data": dump_data}, verbose=verbose)
     return num_datapoints
