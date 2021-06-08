@@ -4,6 +4,8 @@ from .lazy_import import lazy_callable, lazy_module
 
 num2words = lazy_callable("num2words.num2words")
 spellchecker = lazy_module("spellchecker")
+editdistance = lazy_module("editdistance")
+
 # from num2words import num2words
 
 
@@ -363,15 +365,34 @@ def infer_num_replacer(num_range=100, condense=True):
     return final_replacer
 
 
-def vocab_corrector_gen(vocab):
-    spell = spellchecker.SpellChecker(distance=1)
+def vocab_corrector_gen(vocab, distance=1, method="spell"):
+    spell = spellchecker.SpellChecker(distance=distance)
     words_to_remove = set(spell.word_frequency.words()) - set(vocab)
     spell.word_frequency.remove_words(words_to_remove)
+    spell.word_frequency.load_words(vocab)
 
-    def corrector(inp):
-        return " ".join(
-            [spell.correction(tok) for tok in spell.split_words(inp)]
-        )
+    if method == "spell":
+
+        def corrector(inp):
+            # return " ".join(
+            #     [spell.correction(tok) for tok in spell.split_words(inp)]
+            # )
+            return " ".join(
+                [spell.correction(tok) for tok in inp.split()]
+            )
+
+    elif method == "edit":
+        # editdistance.eval("banana", "bahama")
+
+        def corrector(inp):
+            match_dists = sorted(
+                [(v, editdistance.eval(inp, v)) for v in vocab],
+                key=lambda x: x[1],
+            )
+            return match_dists[0]
+
+    else:
+        raise ValueError(f"unsupported method:{method}")
 
     return corrector
 

@@ -6,6 +6,7 @@ requirements = [
     # "nemo_toolkit[asr] @ git+https://github.com/NVIDIA/NeMo.git@09e3ba4dfe333f86d6c5c1048e07210924294be9#egg=nemo_toolkit",
     # "fairseq @ git+https://github.com/pytorch/fairseq.git@94a1b924f3adec25c8c508ac112410d02b400d1e#egg=fairseq",
     # "google-cloud-texttospeech~=1.0.1",
+    "six~=1.16.0",
     "tqdm~=4.49.0",
     # "pydub~=0.24.0",
     # "scikit_learn~=0.22.1",
@@ -58,14 +59,15 @@ extra_requirements = {
         "torchvision~=0.8.2",
         "torchaudio~=0.7.2",
     ],
-    "eval": [
+    "infer": [
         "jiwer~=2.2.0",
         "pydub~=0.24.0",
         "tritonclient[grpc]~=2.9.0",
         "pyspellchecker~=0.6.2",
         "num2words~=0.5.10",
+        "pydub~=0.24.0",
     ],
-    "infer": [
+    "infer_min": [
         "pyspellchecker~=0.6.2",
         "num2words~=0.5.10",
     ],
@@ -85,7 +87,7 @@ extra_requirements = {
     "train": ["torchaudio~=0.6.0", "torch-stft~=0.1.4"],
 }
 extra_requirements["deploy"] = (
-    extra_requirements["models"] + extra_requirements["infer"]
+    extra_requirements["models"] + extra_requirements["infer_min"]
 )
 extra_requirements["all"] = list(
     {d for r in extra_requirements.values() for d in r}

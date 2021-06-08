@@ -49,6 +49,7 @@ from .regentity import (  # noqa
     default_num_only_rules,
     default_alnum_rules,
     entity_replacer_keeper,
+    vocab_corrector_gen,
 )
 
 boto3 = lazy_module("boto3")

@@ -15,3 +15,12 @@ def test_infer_num():
         repl("SIX NINE FSIX EIGHT IGSIX SIX NINE NINE THRE ZERO TWO SEVEN ONE")
         == "6968669930271"
     )
+
+    assert (
+        repl("FORTY-TWO SEVEN SIXTY-FOUR SEVEN THREE FIVE U OH FOUR SIX")
+        == "42764735046"
+    )
+    assert (
+        repl("FORTY-TWO SEVEN SIXTY-FOUR SEVEN THREE FIVE U OH FOUR SIX")
+        == "42764735046"
+    )
