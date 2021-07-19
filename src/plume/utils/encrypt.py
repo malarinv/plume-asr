@@ -13,7 +13,7 @@ from .audio import audio_seg_to_wav_bytes, audio_wav_bytes_to_seg
 from .parallel import parallel_apply
 from .lazy_import import lazy_module
 
-cryptography = lazy_module("cryptography")
+cryptography = lazy_module("cryptography.fernet", level='base')
 # cryptography.fernet = lazy_module("cryptography.fernet")
 pydub = lazy_module("pydub")
 

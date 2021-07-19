@@ -55,10 +55,8 @@ def export_jasper(src_dataset_path: Path, dest_dataset_path: Path, unlink: bool 
         out_tsv = dest_dataset_path / Path(o_tsv)
         out_ltr = dest_dataset_path / Path(o_ltr)
         with out_tsv.open("w") as tsv_f, out_ltr.open("w") as ltr_f:
-            if unlink:
-                tsv_f.write(f"{dest_dataset_path}\n")
-            else:
-                tsv_f.write(f"{src_dataset_path}\n")
+            dest_path = dest_dataset_path if unlink else src_dataset_path
+            tsv_f.write(f"{dest_path}\n")
             for md in manifest_data:
                 audio_fname = md["audio_filepath"]
                 pipe_toks = replace_redundant_spaces_with(md["text"], "|").upper()

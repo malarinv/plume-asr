@@ -104,6 +104,8 @@ def triton_transcribe_grpc_gen(
             if len(outputs) > 1 and append_raw:
                 transcript = transcript + "|" + outputs[1].decode("utf-8")
         except InferenceServerException:
+            import traceback
+            traceback.print_exc()
             transcript = "[server error]"
         return transcript
 
@@ -146,7 +148,7 @@ def triton_transcribe_grpc_gen(
 
 
 @app.command()
-def file(
+def audio_file(
     audio_file: Path,
     write_file: bool = False,
     chunked: bool = False,

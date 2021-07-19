@@ -73,7 +73,12 @@ def fix_path(dataset_path: Path, force: bool = False):
 
 
 @app.command()
-def merge(src_dataset_paths: List[Path], dest_dataset_path: Path):
+def merge(
+    src_dataset_paths: List[Path],
+    dest_dataset_path: Path,
+    unlink: bool = False,
+    verbose: bool = True,
+):
     reader_list = []
     abs_manifest_path = Path("abs_manifest.json")
     for dataset_path in src_dataset_paths:
@@ -81,7 +86,29 @@ def merge(src_dataset_paths: List[Path], dest_dataset_path: Path):
         reader_list.append(asr_manifest_reader(manifest_path))
     dest_dataset_path.mkdir(parents=True, exist_ok=True)
     dest_manifest_path = dest_dataset_path / abs_manifest_path
-    asr_manifest_writer(dest_manifest_path, chain(*reader_list))
+    asr_manifest_writer(
+        dest_manifest_path, chain(*reader_list), verbose=verbose
+    )
+    if unlink:
+        eject(dest_dataset_path, verbose=verbose)
+
+
+def eject(dest_dataset_path: Path, verbose: bool = False):
+    wav_dir = dest_dataset_path / Path("wavs")
+    wav_dir.mkdir(exist_ok=True, parents=True)
+    abs_manifest_path = ExtendedPath(
+        dest_dataset_path / Path("abs_manifest.json")
+    )
+    backup_abs_manifest_path = abs_manifest_path.with_suffix(".json.orig")
+    shutil.copy(abs_manifest_path, backup_abs_manifest_path)
+    manifest_data = list(abs_manifest_path.read_jsonl())
+    for md in tqdm(manifest_data) if verbose else manifest_data:
+        orig_path = Path(md["audio_filepath"])
+        new_path = wav_dir / Path(orig_path.name)
+        shutil.copy(orig_path, new_path)
+        md["audio_filepath"] = str(new_path)
+    abs_manifest_path.write_jsonl(manifest_data)
+    fix_path(dest_dataset_path)
 
 
 @app.command()
@@ -275,7 +302,7 @@ def encrypt(
     src_dataset_path: Path,
     dest_dataset_path: Path,
     encryption_key: str = typer.Option(..., prompt=True, hide_input=True),
-    verbose: bool = False,
+    verbose: bool = True,
 ):
     dest_manifest = dest_dataset_path / Path("manifest.json")
     src_manifest = src_dataset_path / Path("manifest.json")

@@ -18,7 +18,9 @@ def ui():
 
 
 @app.command()
-def annotation(data_dir: Path, dump_fname: Path = "ui_dump.json", task_id: str = ""):
+def annotation(
+    data_dir: Path, dump_fname: Path = "ui_dump.json", task_id: str = ""
+):
     annotation_lit_path = Path(__file__).parent / Path("annotation.py")
     if task_id:
         sys.argv = [
@@ -80,6 +82,13 @@ def encrypted_preview(manifest_path: Path, key: str, port: int = 8081):
 def audio(audio_dir: Path):
     lit_path = Path(__file__).parent / Path("audio.py")
     sys.argv = ["streamlit", "run", str(lit_path), "--", str(audio_dir)]
+    sys.exit(stcli.main())
+
+
+@app.command()
+def slu_infer():
+    lit_path = Path(__file__).parent / Path("slu_infer.py")
+    sys.argv = ["streamlit", "run", str(lit_path)]
     sys.exit(stcli.main())
 
 

@@ -66,6 +66,7 @@ extra_requirements = {
         "pyspellchecker~=0.6.2",
         "num2words~=0.5.10",
         "pydub~=0.24.0",
+        "pyaudio~=0.2.11"
     ],
     "infer_min": [
         "pyspellchecker~=0.6.2",

@@ -13,6 +13,17 @@ def manifest_str(path, dur, text):
     return json.dumps(k) + "\n"
 
 
+def asr_manifest_reader(data_manifest_path: Path):
+    print(f"reading manifest from {data_manifest_path}")
+    with data_manifest_path.open("r") as pf:
+        data_jsonl = pf.readlines()
+    data_data = [json.loads(v) for v in data_jsonl]
+    for p in data_data:
+        p["audio_path"] = data_manifest_path.parent / Path(p["audio_filepath"])
+        p["text"] = p["text"].strip()
+        yield p
+
+
 def asr_manifest_writer(
     asr_manifest_path: Path, manifest_str_source, verbose=False
 ):

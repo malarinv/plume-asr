@@ -32,7 +32,11 @@ import six
 
 # from .transcribe import triton_transcribe_grpc_gen
 # from .eval import app as eval_app
-from .manifest import asr_manifest_writer, manifest_str
+from .manifest import (
+    asr_manifest_writer,
+    asr_manifest_reader,
+    manifest_str,
+)  # noqa
 from .lazy_import import lazy_callable, lazy_module
 from .parallel import parallel_apply
 from .extended_path import ExtendedPath
@@ -430,17 +434,6 @@ def ui_dump_manifest_writer(dataset_dir, asr_data_source, verbose=False):
     return num_datapoints
 
 
-def asr_manifest_reader(data_manifest_path: Path):
-    print(f"reading manifest from {data_manifest_path}")
-    with data_manifest_path.open("r") as pf:
-        data_jsonl = pf.readlines()
-    data_data = [json.loads(v) for v in data_jsonl]
-    for p in data_data:
-        p["audio_path"] = data_manifest_path.parent / Path(p["audio_filepath"])
-        p["text"] = p["text"].strip()
-        yield p
-
-
 def asr_test_writer(out_file_path: Path, source):
     def dd_str(dd, idx):
         path = dd["audio_filepath"]
@@ -558,11 +551,19 @@ def generate_filter_map(src_dataset_path, dest_dataset_path, data_file):
                 blank_count += 1
         typer.echo(f"filtered {blank_count} of {total_count} blank samples")
 
-    def filtered_max_sample_dur():
+    def filtered_maxmin_sample_dur():
+        import soundfile
+
         max_dur_count = 0
         for s in src_data_enum:
-            wav_duration = s["duration"]
-            if wav_duration <= max_sample_dur:
+            wav_real_duration = soundfile.info(
+                src_dataset_path / Path(s["audio_filepath"])
+            ).duration
+            wav_duration = min(wav_real_duration, s["duration"])
+            if (
+                wav_duration <= max_sample_dur
+                and wav_duration > min_sample_dur
+            ):
                 shutil.copy(
                     src_dataset_path / Path(s["audio_filepath"]),
                     dest_dataset_path / Path(s["audio_filepath"]),
@@ -571,7 +572,7 @@ def generate_filter_map(src_dataset_path, dest_dataset_path, data_file):
             else:
                 max_dur_count += 1
         typer.echo(
-            f"filtered {max_dur_count} samples longer thans {max_sample_dur}s"
+            f"filtered {max_dur_count} samples longer thans {max_sample_dur}s and shorter than {min_sample_dur}s"
         )
 
     def filtered_transform_digits():
@@ -641,7 +642,9 @@ def generate_filter_map(src_dataset_path, dest_dataset_path, data_file):
         wav_duration = 0
         for s in src_data_enum:
             # nums = re.sub(" ", "", s["text"])
-            s["text"] = "gAAAAABgq2FR6ajbhMsDmWRQBzX6gIzyAG5sMwFihGeV7E_6eVJqqF78yzmtTJPsJAOJEEXhJ9Z45MrYNgE1sq7VUdsBVGh2cw=="
+            s[
+                "text"
+            ] = "gAAAAABgq2FR6ajbhMsDmWRQBzX6gIzyAG5sMwFihGeV7E_6eVJqqF78yzmtTJPsJAOJEEXhJ9Z45MrYNgE1sq7VUdsBVGh2cw=="
             if (
                 s["duration"] >= min_sample_dur
                 and s["duration"] <= max_sample_dur
@@ -663,7 +666,7 @@ def generate_filter_map(src_dataset_path, dest_dataset_path, data_file):
         "transform_digits": filtered_transform_digits,
         "extract_chars": filtered_extract_chars,
         "resample_ulaw24kmono": filtered_resample,
-        "max_sample_dur": filtered_max_sample_dur,
+        "maxmin_sample_dur": filtered_maxmin_sample_dur,
         "msec_to_sec": filtered_msec_to_sec,
         "blank_3hr_max_dur": filtered_blank_hr_max_dur,
     }
