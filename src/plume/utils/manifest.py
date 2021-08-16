@@ -2,6 +2,7 @@ from pathlib import Path
 
 # from tqdm import tqdm
 import json
+from .audio import audio_wav_bytes_to_seg
 
 # from .extended_path import ExtendedPath
 # from .parallel import parallel_apply
@@ -21,6 +22,10 @@ def asr_manifest_reader(data_manifest_path: Path):
     for p in data_data:
         p["audio_path"] = data_manifest_path.parent / Path(p["audio_filepath"])
         p["text"] = p["text"].strip()
+        # import pdb; pdb.set_trace()
+        p["audio_seg"] = audio_wav_bytes_to_seg(
+                (data_manifest_path.parent / p["audio_filepath"]).read_bytes()
+        )
         yield p
 
 

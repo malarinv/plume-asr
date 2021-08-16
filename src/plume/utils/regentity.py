@@ -147,6 +147,43 @@ def do_tri_verbose_list():
     ] + ["hundred"]
 
 
+def default_alpha_rules(oh_is_zero, i_oh_limit):
+    o_i_vars = r"(\[?(?:A|Oh|O|I)\]?)"
+    i_oh_limit_rules = [
+        (r"\b([b-hj-np-z])\b", "\\1"),
+        # (
+        #     r"\b((?:"
+        #     + al_num_regex
+        #     + r"|^)\b\s*)(I|O)(\s*\b)(?="
+        #     + al_num_regex
+        #     + r"\s+|$)\b",
+        #     "\\1[\\2]\\3",
+        # ),
+        # (
+        #     r"\b" + o_i_vars + r"(\s+)" + o_i_vars + r"\b",
+        #     "[\\1]\\2[\\3]",
+        # ),
+        (
+            r"(\s+|^)" + o_i_vars + r"(\s+)\[?" + o_i_vars + r"\]?(\s+|$)",
+            "\\1[\\2]\\3[\\4]\\5",
+        ),
+        (
+            r"(\s+|^)\[?" + o_i_vars + r"\]?(\s+)" + o_i_vars + r"(\s+|$)",
+            "\\1[\\2]\\3[\\4]\\5",
+        ),
+    ]
+    entity_rules = (
+        +[(r"\boh\b", "o")]
+        + [
+            (r"\bdouble(?: |-)(\w+|\d+)\b", "\\1 \\1"),
+            (r"\btriple(?: |-)(\w+|\d+)\b", "\\1 \\1 \\1"),
+            # (r"\b([a-zA-Z])\b", "\\1"),
+        ]
+        + (i_oh_limit_rules if i_oh_limit else [(r"\b([a-zA-Z])\b", "\\1")])
+    )
+    return entity_rules
+
+
 def default_alnum_rules(num_range, oh_is_zero, i_oh_limit):
     oh_is_zero_rules = [
         (r"\boh\b", "0"),
@@ -285,6 +322,34 @@ def alnum_keeper(num_range=100, oh_is_zero=False):
     return keeper
 
 
+def alpha_keeper(oh_is_zero=False):
+    entity_rules = default_alpha_rules(oh_is_zero, i_oh_limit=True)
+
+    # def strip_space(match_obj):
+    #     # char_elem = match_obj.group(1)
+    #     return match_obj.group(1).strip() + match_obj.group(2).strip()
+
+    pre_rules = [
+        (r"[ ;,.]", " "),
+        (r"[']", ""),
+        # (
+        #     r"((?:(?<=\w{2,2})|^)\s*)(?:\bI\b|\bi\b|\bOh\b|\boh\b)(\s*(?:\w{2,}|$))",
+        #     strip_space,
+        # ),
+    ]
+
+    post_rules = [
+        # (
+        #     r"((?:(?<=\w{2,2})|^)\s*)(?:\bI\b|\bi\b|\bOh\b|\boh\b)(\s*(?:\w{2,}|$))",
+        #     strip_space,
+        # )
+    ]
+    replacer, keeper = entity_replacer_keeper(
+        pre_rules=pre_rules, entity_rules=entity_rules, post_rules=post_rules
+    )
+    return keeper
+
+
 def num_keeper_orig(num_range=10, extra_rules=[]):
     num_int_map_ty = [
         (
@@ -377,9 +442,7 @@ def vocab_corrector_gen(vocab, distance=1, method="spell"):
             # return " ".join(
             #     [spell.correction(tok) for tok in spell.split_words(inp)]
             # )
-            return " ".join(
-                [spell.correction(tok) for tok in inp.split()]
-            )
+            return " ".join([spell.correction(tok) for tok in inp.split()])
 
     elif method == "edit":
         # editdistance.eval("banana", "bahama")

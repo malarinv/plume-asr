@@ -82,6 +82,8 @@ extra_requirements = {
         "google-cloud-speech~=1.3.1",
     ],
     "ui": [
+        "pyspellchecker~=0.6.2",
+        "google-cloud-texttospeech~=1.0.1",
         "rangehttpserver~=1.2.0",
     ],
     "crypto": ["cryptography~=3.4.7"],

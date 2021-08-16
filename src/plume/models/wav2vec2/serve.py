@@ -24,7 +24,7 @@ def rpyc(
 ):
     for p in [w2v_path, ctc_path, target_dict_path]:
         if not p.exists():
-            logging.info(f"{p} doesn't exists")
+            typer.echo(f"{p} doesn't exists")
             return
     w2vasr = Wav2Vec2ASR(str(ctc_path), str(w2v_path), str(target_dict_path))
     service = ASRService(w2vasr)

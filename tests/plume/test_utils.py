@@ -87,6 +87,30 @@ def test_alnum_keeper():
     )
 
 
+def test_alpha_keeper():
+    keeper = alnum_keeper()
+    assert keeper("I One hundred n fifty-eight not 5 oh o fifty A B more") == (
+        "I One hundred n fifty-eight 5 oh o fifty A B",
+        11,
+    )
+    assert keeper(
+        "I'll phone number One hundred n fifty-eight not 5 oh o fifty A B more"
+    ) == ("One hundred n fifty-eight 5 oh o fifty A B", 10)
+    assert keeper(
+        "I'm One hundred n fifty-eight not 5 oh o fifty A B more"
+    ) == (
+        "One hundred n fifty-eight 5 oh o fifty A B",
+        10,
+    )
+
+    assert keeper(
+        "I am One hundred n fifty-eight not 5 oh o fifty A B more"
+    ) == (
+        "One hundred n fifty-eight 5 oh o fifty A B",
+        10,
+    )
+
+
 @pytest.fixture
 def random():
     rand.seed(0)

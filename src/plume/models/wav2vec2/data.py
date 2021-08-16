@@ -42,6 +42,7 @@ def export_jasper(src_dataset_path: Path, dest_dataset_path: Path, unlink: bool 
                 pydub.AudioSegment.from_wav(wav_path)
                 .set_frame_rate(16000)
                 .set_channels(1)
+                .set_sample_width(1)
             )
             dest_path = dest_dataset_path / Path("wavs") / Path(wav_path.name)
             audio_seg.export(dest_path, format="wav")
