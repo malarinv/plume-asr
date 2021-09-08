@@ -1,23 +1,26 @@
 from pathlib import Path
 import typer
 from tqdm import tqdm
+
 # import pandas as pd
 
 from plume.utils import (
     asr_manifest_reader,
     discard_except_digits,
     replace_digit_symbol,
-    lazy_module
+    lazy_module,
     # run_shell,
 )
 from ...utils.transcribe import triton_transcribe_grpc_gen, transcribe_rpyc_gen
 
-pd = lazy_module('pandas')
+pd = lazy_module("pandas")
 app = typer.Typer()
 
 
 @app.command()
-def manifest(manifest_file: Path, result_file: Path = "results.csv", rpyc: bool = False):
+def manifest(
+    manifest_file: Path, result_file: Path = "results.csv", rpyc: bool = False
+):
     from pydub import AudioSegment
 
     host = "localhost"
@@ -25,7 +28,9 @@ def manifest(manifest_file: Path, result_file: Path = "results.csv", rpyc: bool 
     if rpyc:
         transcriber, audio_prep = transcribe_rpyc_gen(host, port)
     else:
-        transcriber, audio_prep = triton_transcribe_grpc_gen(host, port, method='whole')
+        transcriber, audio_prep = triton_transcribe_grpc_gen(
+            host, port, method="whole"
+        )
     result_path = manifest_file.parent / result_file
     manifest_list = list(asr_manifest_reader(manifest_file))
 

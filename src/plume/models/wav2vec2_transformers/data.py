@@ -9,15 +9,18 @@ from tqdm import tqdm
 from plume.utils import (
     ExtendedPath,
     replace_redundant_spaces_with,
-    lazy_module
+    lazy_module,
 )
-soundfile = lazy_module('soundfile')
-pydub = lazy_module('pydub')
+
+soundfile = lazy_module("soundfile")
+pydub = lazy_module("pydub")
 app = typer.Typer()
 
 
 @app.command()
-def export_jasper(src_dataset_path: Path, dest_dataset_path: Path, unlink: bool = True):
+def export_jasper(
+    src_dataset_path: Path, dest_dataset_path: Path, unlink: bool = True
+):
     dict_ltr = dest_dataset_path / Path("dict.ltr.txt")
     (dest_dataset_path / Path("wavs")).mkdir(exist_ok=True, parents=True)
     tok_counter = Counter()
@@ -51,13 +54,16 @@ def export_jasper(src_dataset_path: Path, dest_dataset_path: Path, unlink: bool 
                 tsv_f.write(f"{src_dataset_path}\n")
             for md in manifest_data:
                 audio_fname = md["audio_filepath"]
-                pipe_toks = replace_redundant_spaces_with(md["text"], "|").upper()
+                pipe_toks = replace_redundant_spaces_with(
+                    md["text"], "|"
+                ).upper()
                 # pipe_toks = "|".join(re.sub(" ", "", md["text"]))
-                # pipe_toks = alnum_to_asr_tokens(md["text"]).upper().replace(" ", "|")
                 tok_counter.update(pipe_toks)
                 letter_toks = " ".join(pipe_toks) + " |\n"
                 frame_count = soundfile.info(audio_fname).frames
-                rel_path = Path(audio_fname).relative_to(src_dataset_path.absolute())
+                rel_path = Path(audio_fname).relative_to(
+                    src_dataset_path.absolute()
+                )
                 ltr_f.write(letter_toks)
                 tsv_f.write(f"{rel_path}\t{frame_count}\n")
     with dict_ltr.open("w") as d_f:
