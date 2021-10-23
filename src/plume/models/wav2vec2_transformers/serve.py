@@ -1,5 +1,5 @@
 import os
-import logging
+# import logging
 from pathlib import Path
 
 # from rpyc.utils.server import ThreadedServer
@@ -10,6 +10,10 @@ from plume.utils import lazy_callable
 
 # from plume.models.wav2vec2_transformers.asr import Wav2Vec2TransformersASR
 # from .asr import Wav2Vec2ASR
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+# )
 
 ThreadedServer = lazy_callable("rpyc.utils.server.ThreadedServer")
 Wav2Vec2TransformersASR = lazy_callable(
@@ -41,13 +45,12 @@ app = typer.Typer()
 def rpyc_dir(
     model_dir: Path, port: int = int(os.environ.get("ASR_RPYC_PORT", "8044"))
 ):
+    typer.echo("loading asr model...")
     w2vasr = Wav2Vec2TransformersASR(model_dir)
+    typer.echo("loaded asr model")
     service = ASRService(w2vasr)
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
-    logging.info("starting asr server...")
+
+    typer.echo(f"serving asr on :{port}...")
     t = ThreadedServer(service, port=port)
     t.start()
 

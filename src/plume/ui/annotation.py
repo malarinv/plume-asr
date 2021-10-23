@@ -46,7 +46,10 @@ def main(data_dir: Path, dump_fname: Path = "ui_dump.json", task_id: str = ""):
         st.title(f"ASR Validation - # {task_uid}")
     st.markdown(f"{sample_no+1} of {len(asr_data)} : **{sample['text']}**")
     new_sample = st.number_input(
-        "Go To Sample:", value=sample_no + 1, min_value=1, max_value=len(asr_data)
+        "Go To Sample:",
+        value=sample_no + 1,
+        min_value=1,
+        max_value=len(asr_data),
     )
     if new_sample != sample_no + 1:
         st.update_cursor(new_sample - 1)
@@ -60,7 +63,9 @@ def main(data_dir: Path, dump_fname: Path = "ui_dump.json", task_id: str = ""):
         show_key(sample, "asr_wer", trail="%")
         show_key(sample, "correct_candidate")
 
-    st.sidebar.image((data_dir / Path(sample["plot_path"])).read_bytes())
+    if "plot_path" in sample:
+        st.sidebar.image((data_dir / Path(sample["plot_path"])).read_bytes())
+
     st.audio((data_dir / Path(sample["audio_path"])).open("rb"))
     # set default to text
     corrected = sample["text"]
@@ -78,27 +83,37 @@ def main(data_dir: Path, dump_fname: Path = "ui_dump.json", task_id: str = ""):
         corrected = ""
     if st.button("Submit"):
         st.update_entry(
-            sample["utterance_id"], {"status": selected, "correction": corrected}
+            sample["utterance_id"],
+            {"status": selected, "correction": corrected},
         )
         st.update_cursor(sample_no + 1)
     if correction_entry:
         status = correction_entry["value"]["status"]
         correction = correction_entry["value"]["correction"]
-        st.markdown(f"Your Response: **{status}** Correction: **{correction}**")
+        st.markdown(
+            f"Your Response: **{status}** Correction: **{correction}**"
+        )
     text_sample = st.text_input("Go to Text:", value="")
     if text_sample != "":
-        candidates = [i for (i, p) in enumerate(asr_data) if p["text"] == text_sample]
+        candidates = [
+            i for (i, p) in enumerate(asr_data) if p["text"] == text_sample
+        ]
         if len(candidates) > 0:
             st.update_cursor(candidates[0])
-    real_idx = st.number_input(
-        "Go to real-index",
-        value=sample["real_idx"],
-        min_value=0,
-        max_value=len(asr_data) - 1,
-    )
-    if real_idx != int(sample["real_idx"]):
-        idx = [i for (i, p) in enumerate(asr_data) if p["real_idx"] == real_idx][0]
-        st.update_cursor(idx)
+    if "real_idx" in sample:
+        real_idx = st.number_input(
+            "Go to real-index",
+            value=sample["real_idx"],
+            min_value=0,
+            max_value=len(asr_data) - 1,
+        )
+        if real_idx != int(sample["real_idx"]):
+            idx = [
+                i
+                for (i, p) in enumerate(asr_data)
+                if p["real_idx"] == real_idx
+            ][0]
+            st.update_cursor(idx)
 
 
 if __name__ == "__main__":

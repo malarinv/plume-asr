@@ -27,7 +27,10 @@ def main(manifest: Path):
     st.title("ASR Manifest Preview")
     st.markdown(f"{sample_no+1} of {len(asr_data)} : **{sample['text']}**")
     new_sample = st.number_input(
-        "Go To Sample:", value=sample_no + 1, min_value=1, max_value=len(asr_data)
+        "Go To Sample:",
+        value=sample_no + 1,
+        min_value=1,
+        max_value=len(asr_data),
     )
     if new_sample != sample_no + 1:
         st.update_cursor(new_sample - 1)

@@ -1,7 +1,6 @@
 import io
 import os
 import re
-import json
 import wave
 import logging
 import subprocess

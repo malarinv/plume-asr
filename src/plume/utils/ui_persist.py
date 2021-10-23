@@ -11,10 +11,17 @@ def setup_file_state(st):
 
         def current_cursor_fn():
             return task_path.read_json()["current_cursor"]
+            # if "audio_sample_idx" not in st.session_state:
+            #     st.session_state.audio_sample_idx = task_path.read_json()[
+            #         "current_cursor"
+            #     ]
+            # return st.session_state.audio_sample_idx
 
         def update_cursor_fn(val=0):
             task_path.write_json({"current_cursor": val})
-            rerun()
+            # rerun()
+            # st.session_state.audio_sample_idx = val
+            st.experimental_rerun()
 
         st.get_current_cursor = current_cursor_fn
         st.update_cursor = update_cursor_fn

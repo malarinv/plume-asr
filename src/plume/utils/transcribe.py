@@ -47,12 +47,15 @@ def transcribe_rpyc_gen(asr_host=ASR_RPYC_HOST, asr_port=ASR_RPYC_PORT):
         asr_seg = (
             aud_seg.set_channels(1).set_sample_width(2).set_frame_rate(16000)
         )
+        # af = BytesIO()
+        # asr_seg.export(af, format="wav")
+        # input_audio_bytes = af.getvalue()
+        return asr_seg
+
+    def dummy_transcript(asr_seg, append_raw=False):
         af = BytesIO()
         asr_seg.export(af, format="wav")
-        input_audio_bytes = af.getvalue()
-        return input_audio_bytes
-
-    def dummy_transcript(aud, append_raw=False):
+        aud = af.getvalue()
         return asr.transcribe(aud)
 
     return dummy_transcript, audio_prep
@@ -147,6 +150,56 @@ def triton_transcribe_grpc_gen(
     return whole_transcriber, audio_prep
 
 
+def chunk_transcribe_meta_gen(
+    transcriber,
+    prep,
+    method="chunked",
+    chunk_msec=5000,
+    sil_msec=500,
+    sep=" ",
+):
+    from tritonclient.utils import np_to_triton_dtype, InferenceServerException
+    import tritonclient.grpc as grpcclient
+    # force loading
+    np.array
+
+    sup_meth = ["chunked", "silence", "whole"]
+    if method not in sup_meth:
+        meths = "|".join(sup_meth)
+        raise Exception(f"unsupported method {method}. pick one of {meths}")
+
+    def chunked_transcriber(aud_seg):
+        if method == "silence":
+            sil_chunks = pydub.silence.split_on_silence(
+                aud_seg,
+                min_silence_len=sil_msec,
+                silence_thresh=-50,
+                keep_silence=500,
+            )
+            chunks = [sc for c in sil_chunks for sc in c[::chunk_msec]]
+        else:
+            chunks = aud_seg[::chunk_msec]
+        # if overlap:
+        #     chunks = [
+        #         aud_seg[start, end]
+        #         for start, end in range(0, int(aud_seg.duration_seconds * 1000, 1000))
+        #     ]
+        #     pass
+        transcript_list = []
+        sil_pad = pydub.AudioSegment.silent(duration=sil_msec)
+        for seg in chunks:
+            t_seg = sil_pad + seg + sil_pad
+            c_transcript = transcriber(t_seg)
+            transcript_list.append(c_transcript)
+        transcript = sep.join(transcript_list)
+        return transcript
+    whole_transcriber = (
+        transcriber if method == "whole" else chunked_transcriber
+    )
+
+    return whole_transcriber, prep
+
+
 @app.command()
 def audio_file(
     audio_file: Path,
@@ -157,13 +210,15 @@ def audio_file(
     model="slu_num_wav2vec2",
 ):
     aseg = pydub.AudioSegment.from_file(audio_file)
+    method = "chunked" if chunked else "whole"
     if rpyc:
-        transcriber, prep = transcribe_rpyc_gen()
+        base_transcriber, base_prep = transcribe_rpyc_gen()
     else:
-        method = "chunked" if chunked else "whole"
-        transcriber, prep = triton_transcribe_grpc_gen(
-            asr_model=model, method=method, append_raw=append_raw
+        base_transcriber, base_prep = triton_transcribe_grpc_gen(
+            asr_model=model, method='whole', append_raw=append_raw
         )
+    transcriber, prep = chunk_transcribe_meta_gen(
+        base_transcriber, base_prep, method=method)
     transcription = transcriber(prep(aseg))
 
     typer.echo(transcription)
